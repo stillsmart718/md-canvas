@@ -269,10 +269,16 @@ const App: React.FC = () => {
   const onPreviewScroll = useCallback(() => { handlePreviewScroll(); handlePreviewScrollForToc(); }, [handlePreviewScroll, handlePreviewScrollForToc]);
 
   useEffect(() => {
-    const scroller = document.querySelector(".cm-scroller");
-    if (scroller) scroller.addEventListener("scroll", handleEditorScroll);
-    return () => scroller?.removeEventListener("scroll", handleEditorScroll);
-  }, [handleEditorScroll, focusMode]);
+    // Re-attach on tab/file switch — the editor DOM is replaced
+    const t = setTimeout(() => {
+      const scroller = document.querySelector(".cm-scroller");
+      if (scroller) scroller.addEventListener("scroll", handleEditorScroll);
+    }, 100);
+    return () => {
+      clearTimeout(t);
+      document.querySelector(".cm-scroller")?.removeEventListener("scroll", handleEditorScroll);
+    };
+  }, [handleEditorScroll, focusMode, filePath]);
 
   const handleTocClick = useCallback((id: string) => {
     if (!previewRef.current) return;
