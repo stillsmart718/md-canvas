@@ -48,7 +48,7 @@
 
 ### 下载安装
 
-从 [Releases](https://github.com/your-username/md-canvas/releases) 页面下载最新 `.dmg` 文件，双击安装。
+从 [Releases](https://github.com/stillsmart718/md-canvas/releases) 页面下载最新 `.dmg` 文件，双击安装。
 
 > ⚠️ 应用未签名，首次打开请右键点击 →「打开」以绕过 Gatekeeper。
 
@@ -56,7 +56,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/md-canvas.git
+git clone https://github.com/stillsmart718/md-canvas.git
 cd md-canvas
 
 # 安装依赖
