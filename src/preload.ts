@@ -23,6 +23,8 @@ export interface MDCanvasAPI {
   windowCollapseToggle: (collapsed: boolean) => Promise<boolean>;
   windowGetFilepath: () => Promise<string>;
   exportPdf: (html: string, title: string) => Promise<boolean>;
+  exportImage: (html: string, title: string) => Promise<boolean>;
+  imageSave: (fileName: string, data: string) => Promise<string>;
 }
 
 const api: MDCanvasAPI = {
@@ -39,6 +41,8 @@ const api: MDCanvasAPI = {
   windowCollapseToggle: (collapsed: boolean) => ipcRenderer.invoke("window:collapse-toggle", collapsed),
   windowGetFilepath: () => ipcRenderer.invoke("window:get-filepath"),
   exportPdf: (html, title) => ipcRenderer.invoke("export:pdf", html, title),
+  exportImage: (html, title) => ipcRenderer.invoke("export:image", html, title),
+  imageSave: (fileName, data) => ipcRenderer.invoke("image:save", fileName, data),
 };
 
 contextBridge.exposeInMainWorld("mdCanvas", api);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import type { FileEntry, FileWithContent } from "../preload";
+import type { FileEntry } from "../preload";
+import type { FileWithContent } from "../preload";
 import { matchScore, extractTags, highlightText, extractContext } from "./searchUtils";
 
 interface Props {
@@ -21,7 +22,7 @@ const QuickSwitcher: React.FC<Props> = ({ visible, onClose, onSelect }) => {
     }
   }, [visible]);
 
-  const q = query.trim().replace(/^#/, "");
+  const q = query.trim();
 
   const filtered = useMemo(() => {
     if (!q) return files;

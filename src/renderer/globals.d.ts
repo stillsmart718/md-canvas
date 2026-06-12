@@ -25,6 +25,8 @@ declare global {
       windowCollapseToggle: (collapsed: boolean) => Promise<boolean>;
       windowGetFilepath: () => Promise<string>;
       exportPdf: (html: string, title: string) => Promise<boolean>;
+      exportImage: (html: string, title: string) => Promise<boolean>;
+      imageSave: (fileName: string, data: string) => Promise<string>;
     };
   }
 }

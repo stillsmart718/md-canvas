@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { FileEntry, FileWithContent } from "../preload";
-import { matchScore, extractTags, highlightText, extractContext } from "./searchUtils";
 
 interface Props {
   currentPath: string;
@@ -9,6 +8,38 @@ interface Props {
   onRename: (entry: FileEntry, newName: string) => void;
   visible: boolean;
   onToggle: () => void;
+}
+
+function extractTags(content: string): string[] {
+  const tags = new Set<string>();
+  const inlineRegex = /(?:^|\s)#([\w一-鿿-]+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = inlineRegex.exec(content)) !== null) {
+    tags.add(match[1]);
+  }
+  const yamlMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (yamlMatch) {
+    const fm = yamlMatch[1];
+    const tagLine = fm.match(/^tags?\s*:\s*(.+)$/m);
+    if (tagLine) {
+      const raw = tagLine[1];
+      if (raw.startsWith("[")) {
+        const listMatch = raw.match(/\[([^\]]*)\]/);
+        if (listMatch) {
+          listMatch[1].split(",").forEach((t) => {
+            const cleaned = t.trim().replace(/["']/g, "");
+            if (cleaned) tags.add(cleaned);
+          });
+        }
+      } else {
+        raw.split(/\s+/).forEach((t) => {
+          const cleaned = t.trim();
+          if (cleaned) tags.add(cleaned);
+        });
+      }
+    }
+  }
+  return Array.from(tags);
 }
 
 const NotesList: React.FC<Props> = ({ currentPath, onSelect, onDelete, onRename, visible, onToggle }) => {
@@ -27,6 +58,9 @@ const NotesList: React.FC<Props> = ({ currentPath, onSelect, onDelete, onRename,
   }, []);
 
   useEffect(() => { loadFiles(); }, [loadFiles]);
+
+  // Refresh list whenever currentPath changes (new note, tab switch, etc.)
+  useEffect(() => { loadFiles(); }, [currentPath]);
 
   const allTags = useMemo(() => {
     const tagCount = new Map<string, number>();
@@ -47,19 +81,10 @@ const NotesList: React.FC<Props> = ({ currentPath, onSelect, onDelete, onRename,
       result = result.filter((f) => extractTags(f.content).includes(tagFilter));
     }
     if (query) {
-      const scored = result
-        .map((f) => {
-          const name = f.name.replace(/\.md$/, "");
-          const tags = extractTags(f.content);
-          const nameScore = matchScore(name, query);
-          const tagScore = matchScore(tags.join(" "), query);
-          const contentScore = matchScore(f.content, query);
-          const bestScore = Math.max(nameScore, tagScore, contentScore);
-          return { file: f, score: bestScore };
-        })
-        .filter((e) => e.score > -Infinity)
-        .sort((a, b) => b.score - a.score);
-      result = scored.map((e) => e.file);
+      const q = query.toLowerCase();
+      result = result.filter(
+        (f) => f.name.toLowerCase().includes(q)
+      );
     }
     return result;
   }, [files, query, tagFilter]);
@@ -121,26 +146,6 @@ const NotesList: React.FC<Props> = ({ currentPath, onSelect, onDelete, onRename,
     loadFiles();
   };
 
-  const isSearching = query.length > 0;
-
-  // ── Render helpers ────────────────────────────────────────
-  const renderName = (name: string) => (
-    <span className="noteslist-filename">
-      {isSearching ? highlightText(name.replace(/\.md$/, ""), query) : name.replace(/\.md$/, "")}
-    </span>
-  );
-
-  const renderContext = (content: string) => {
-    if (!isSearching) return null;
-    const ctx = extractContext(content, query);
-    if (!ctx) return null;
-    return (
-      <span className="search-context">
-        {highlightText(ctx, query)}
-      </span>
-    );
-  };
-
   if (!visible) {
     return (
       <button className="noteslist-toggle-btn" onClick={onToggle} title="显示便签列表">
@@ -196,12 +201,7 @@ const NotesList: React.FC<Props> = ({ currentPath, onSelect, onDelete, onRename,
                   }}
                   onMouseEnter={() => setDropdownIndex(i)}
                 >
-                  <div className="noteslist-dropdown-info">
-                    <span className="noteslist-dropdown-name">
-                      {highlightText(f.name.replace(/\.md$/, ""), query)}
-                    </span>
-                    {renderContext(f.content)}
-                  </div>
+                  <span className="noteslist-dropdown-name">{f.name.replace(/\.md$/, "")}</span>
                   <span className="noteslist-dropdown-tags">
                     {extractTags(f.content).slice(0, 3).map((t) => (
                       <span key={t} className="noteslist-dropdown-tag">#{t}</span>
@@ -258,7 +258,7 @@ const NotesList: React.FC<Props> = ({ currentPath, onSelect, onDelete, onRename,
                   autoFocus
                 />
               ) : (
-                renderName(f.name)
+                <span className="noteslist-filename">{f.name.replace(/\.md$/, "")}</span>
               )}
               <div className="noteslist-item-tags">
                 {extractTags(f.content).slice(0, 3).map((t) => (

@@ -254,6 +254,59 @@ ${bodyHtml}
 </html>`;
 }
 
+// ── Image save ──────────────────────────────────────────────
+const IMAGES_DIR = path.join(os.homedir(), "md-notes", "images");
+
+ipcMain.handle("image:save", async (_e, fileName: string, dataBase64: string) => {
+  await fs.mkdir(IMAGES_DIR, { recursive: true });
+  let name = fileName;
+  const ext = path.extname(name) || ".png";
+  const base = path.basename(name, ext);
+  let dest = path.join(IMAGES_DIR, name);
+  // Avoid overwriting existing files
+  let counter = 1;
+  while (true) {
+    try { await fs.access(dest); } catch { break; }
+    dest = path.join(IMAGES_DIR, `${base}-${counter}${ext}`);
+    counter++;
+  }
+  const buf = Buffer.from(dataBase64, "base64");
+  await fs.writeFile(dest, buf);
+  return `images/${path.basename(dest)}`;
+});
+
+// ── Export image ────────────────────────────────────────────
+ipcMain.handle("export:image", async (event, html: string, title: string) => {
+  const senderWin = BrowserWindow.fromWebContents(event.sender);
+  if (!senderWin) return false;
+  const result = await dialog.showSaveDialog(senderWin, {
+    title: "导出图片",
+    defaultPath: `${title || "export"}.png`,
+    filters: [{ name: "PNG 图片", extensions: ["png"] }],
+  });
+  if (result.canceled || !result.filePath) return false;
+
+  const printWin = new BrowserWindow({
+    width: 900, height: 700,
+    show: false,
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
+  });
+
+  try {
+    const fullHtml = wrapHtmlDocument(html, title);
+    await printWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`);
+    await new Promise((r) => setTimeout(r, 600));
+    const image = await printWin.webContents.capturePage();
+    const png = image.toPNG();
+    await fs.writeFile(result.filePath, png);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    printWin.close();
+  }
+});
+
 ipcMain.handle("export:pdf", async (event, html: string, title: string) => {
   const senderWin = BrowserWindow.fromWebContents(event.sender);
   if (!senderWin) return false;
