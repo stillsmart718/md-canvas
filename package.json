@@ -1,0 +1,73 @@
+{
+  "name": "md-canvas",
+  "version": "1.0.0",
+  "description": "macOS Markdown 便签工具",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "npm run build && npx electron .",
+    "build": "npm run build:ts && npm run build:renderer",
+    "build:ts": "tsc && mkdir -p dist/renderer && cp src/renderer/*.html src/renderer/*.css dist/renderer/ 2>/dev/null; true",
+    "build:renderer": "esbuild src/renderer/index.tsx --bundle --minify --outfile=dist/renderer/index.js --platform=browser --external:electron --external:fs --external:path --external:os",
+    "build:app": "npm run build && electron-builder",
+    "dev": "npm run build && npx electron ."
+  },
+  "keywords": [
+    "markdown",
+    "notes",
+    "macos"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/lang-markdown": "^6.3.0",
+    "@codemirror/language-data": "^6.5.2",
+    "@codemirror/state": "^6.5.0",
+    "@codemirror/theme-one-dark": "^6.1.0",
+    "@codemirror/view": "^6.35.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "esbuild": "^0.28.0",
+    "highlight.js": "^11.10.0",
+    "marked": "^15.0.0",
+    "marked-highlight": "^2.2.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  },
+  "build": {
+    "appId": "com.md-canvas.app",
+    "productName": "MD预览",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icon.icns"
+    },
+    "dmg": {
+      "title": "MD预览",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*"
+    ]
+  }
+}
